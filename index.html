@@ -1,0 +1,2123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Age at Heart Simulator</title>
+  <style>
+    :root {
+      --ink: #161416;
+      --ink-soft: #5d5960;
+      --paper: #f8f5ec;
+      --panel: #fffdf7;
+      --line: rgba(22, 20, 22, 0.16);
+      --hot: #ff4f8b;
+      --sun: #ffcf33;
+      --mint: #66df91;
+      --cyan: #20c5e8;
+      --lilac: #a987ff;
+      --coral: #ff7448;
+      --shadow: 8px 8px 0 var(--ink);
+      --soft-shadow: 0 22px 60px rgba(22, 20, 22, 0.18);
+      --radius: 8px;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--paper);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        linear-gradient(90deg, rgba(22, 20, 22, 0.045) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(22, 20, 22, 0.04) 1px, transparent 1px),
+        linear-gradient(125deg, rgba(255, 79, 139, 0.22), transparent 34%),
+        linear-gradient(245deg, rgba(32, 197, 232, 0.22), transparent 42%),
+        linear-gradient(0deg, rgba(102, 223, 145, 0.14), transparent 54%),
+        var(--paper);
+      background-size: 42px 42px, 42px 42px, auto, auto, auto, auto;
+      overflow-x: hidden;
+    }
+
+    button {
+      min-height: 44px;
+      border: 0;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font: inherit;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translate(-1px, -1px);
+    }
+
+    button:active:not(:disabled) {
+      transform: translate(1px, 1px);
+    }
+
+    button:focus-visible {
+      outline: 3px solid rgba(32, 197, 232, 0.55);
+      outline-offset: 3px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    .app {
+      width: min(1160px, calc(100% - 32px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 22px 0;
+      display: grid;
+      align-items: start;
+    }
+
+    .simulator {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      height: min(760px, calc(100vh - 44px));
+      min-height: 640px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--soft-shadow);
+      overflow: hidden;
+    }
+
+    .main-deck {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      min-width: 0;
+      border-right: 2px solid var(--ink);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px;
+      border-bottom: 2px solid var(--ink);
+      background:
+        linear-gradient(90deg, var(--sun), var(--mint) 48%, var(--cyan));
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-chip {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: var(--hot);
+      box-shadow: 4px 4px 0 var(--ink);
+    }
+
+    .brand-chip svg {
+      width: 30px;
+      height: 30px;
+      display: block;
+    }
+
+    h1 {
+      font-size: clamp(1.7rem, 3.8vw, 3.2rem);
+      line-height: 0.92;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: var(--ink-soft);
+      font-size: clamp(0.9rem, 1.7vw, 1rem);
+      font-weight: 850;
+      line-height: 1.25;
+    }
+
+    .utility-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 13px 16px;
+      border-bottom: 2px solid var(--ink);
+      background: #fff;
+    }
+
+    .progress-zone {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .progress-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--ink-soft);
+      font-size: 0.82rem;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .progress-shell {
+      height: 14px;
+      overflow: hidden;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background:
+        repeating-linear-gradient(90deg, rgba(22, 20, 22, 0.09) 0 9px, transparent 9px 18px),
+        #f0eee7;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--hot), var(--coral), var(--sun), var(--cyan));
+      transition: width 320ms cubic-bezier(0.2, 0.9, 0.25, 1);
+    }
+
+    .ghost-btn,
+    .primary-btn,
+    .share-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 14px;
+      border: 2px solid var(--ink);
+      background: #fff;
+      color: var(--ink);
+      box-shadow: 4px 4px 0 var(--ink);
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .primary-btn {
+      min-height: 54px;
+      padding: 13px 20px;
+      background: var(--ink);
+      color: #fff;
+      box-shadow: 5px 5px 0 var(--hot);
+      font-size: 1.04rem;
+    }
+
+    .share-btn {
+      background: var(--sun);
+    }
+
+    .screen-stage {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(255, 207, 51, 0.26), transparent 42%),
+        linear-gradient(315deg, rgba(169, 135, 255, 0.2), transparent 48%),
+        #fffdf8;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      align-content: center;
+      gap: 20px;
+      padding: 24px;
+      overflow: auto;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(14px) scale(0.985);
+      transition: opacity 260ms ease, transform 260ms ease;
+    }
+
+    .screen.is-active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0) scale(1);
+    }
+
+    .start-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .intro-copy {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .eyebrow {
+      width: fit-content;
+      padding: 7px 10px;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background: var(--mint);
+      font-size: 0.8rem;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .start-title {
+      max-width: 760px;
+      font-size: clamp(2.25rem, 5.2vw, 4.25rem);
+      line-height: 0.92;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    .start-subtitle {
+      max-width: 650px;
+      color: var(--ink-soft);
+      font-size: clamp(1.05rem, 2vw, 1.32rem);
+      font-weight: 850;
+      line-height: 1.35;
+    }
+
+    .small-print {
+      color: var(--ink-soft);
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    .scanner-art {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: var(--shadow);
+      transform: rotate(1deg);
+    }
+
+    .start-screen {
+      align-content: start;
+    }
+
+    .player-input {
+      display: grid;
+      gap: 8px;
+    }
+
+    .player-input label {
+      color: var(--ink-soft);
+      font-size: 0.78rem;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .player-input input {
+      min-height: 52px;
+      width: 100%;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: #fff;
+      color: var(--ink);
+      box-shadow: 4px 4px 0 rgba(22, 20, 22, 0.18);
+      font: inherit;
+      font-weight: 900;
+    }
+
+    .player-input input:focus {
+      outline: 3px solid rgba(32, 197, 232, 0.45);
+      outline-offset: 2px;
+    }
+
+    .public-board {
+      display: grid;
+      gap: 8px;
+      padding: 16px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: rgba(32, 197, 232, 0.11);
+    }
+
+    .public-board strong {
+      font-size: clamp(1.35rem, 3vw, 2.15rem);
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .board-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .board-list li {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      padding: 12px;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--ink-soft);
+      font-size: clamp(0.92rem, 1.8vw, 1.04rem);
+      font-weight: 850;
+    }
+
+    .board-list b {
+      color: var(--ink);
+    }
+
+    .scanner-window {
+      min-height: 260px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(rgba(22, 20, 22, 0.07) 50%, transparent 50%),
+        linear-gradient(135deg, rgba(255, 79, 139, 0.28), rgba(32, 197, 232, 0.2)),
+        #fff;
+      background-size: 100% 8px, auto, auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scanner-window::before {
+      content: "";
+      position: absolute;
+      inset: 16px;
+      border: 2px dashed rgba(22, 20, 22, 0.34);
+      border-radius: var(--radius);
+    }
+
+    .scanner-window::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 28px;
+      height: 10px;
+      background: rgba(102, 223, 145, 0.82);
+      box-shadow: 0 0 18px rgba(102, 223, 145, 0.65);
+      animation: scan 2.2s ease-in-out infinite alternate;
+    }
+
+    .scanner-face {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .scanner-face svg {
+      width: min(170px, 78%);
+      height: auto;
+      filter: drop-shadow(5px 5px 0 rgba(22, 20, 22, 0.16));
+    }
+
+    .scanner-lights {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .scanner-lights span {
+      min-height: 34px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: var(--sun);
+    }
+
+    .scanner-lights span:nth-child(2) {
+      background: var(--hot);
+    }
+
+    .scanner-lights span:nth-child(3) {
+      background: var(--cyan);
+    }
+
+    .scanner-lights span:nth-child(4) {
+      background: var(--mint);
+    }
+
+    .question-layout {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+      height: 100%;
+    }
+
+    .question-copy {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: 6px 6px 0 var(--ink);
+    }
+
+    .question-kicker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--ink-soft);
+      font-size: 0.78rem;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .question-text {
+      font-size: clamp(1.55rem, 4.2vw, 3.05rem);
+      line-height: 1;
+      letter-spacing: 0;
+      font-weight: 950;
+      text-wrap: balance;
+    }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .answer-btn {
+      min-height: 94px;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 12px;
+      align-items: center;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(245, 242, 232, 0.94)),
+        #fff;
+      box-shadow: 4px 4px 0 rgba(22, 20, 22, 0.16);
+      color: var(--ink);
+      text-align: left;
+      font-weight: 900;
+      line-height: 1.18;
+    }
+
+    .answer-btn:hover:not(:disabled) {
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(238, 246, 244, 0.98)),
+        #fff;
+    }
+
+    .answer-btn.is-selected {
+      background: var(--ink);
+      color: #fff;
+      box-shadow: 5px 5px 0 var(--hot);
+      transform: translate(-1px, -1px);
+    }
+
+    .answer-index {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      font-size: 0.86rem;
+      font-weight: 950;
+    }
+
+    .micro-feedback {
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: #fff;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .micro-feedback.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .micro-feedback .primary-btn:disabled {
+      opacity: 0.55;
+      transform: none;
+      box-shadow: 3px 3px 0 rgba(22, 20, 22, 0.35);
+    }
+
+    .micro-feedback strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 1rem;
+      font-weight: 950;
+    }
+
+    .micro-feedback span {
+      color: var(--ink-soft);
+      font-weight: 800;
+    }
+
+    .reveal-screen {
+      align-content: center;
+      background:
+        repeating-linear-gradient(135deg, rgba(22, 20, 22, 0.05) 0 8px, transparent 8px 16px),
+        linear-gradient(135deg, rgba(255, 207, 51, 0.32), rgba(32, 197, 232, 0.18)),
+        #fffdf8;
+    }
+
+    .reveal-box {
+      display: grid;
+      gap: 18px;
+      width: min(620px, 100%);
+      justify-self: center;
+      text-align: center;
+    }
+
+    .reveal-dial {
+      width: 170px;
+      height: 170px;
+      display: grid;
+      place-items: center;
+      justify-self: center;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background:
+        conic-gradient(var(--hot), var(--sun), var(--mint), var(--cyan), var(--lilac), var(--hot));
+      box-shadow: var(--shadow);
+      animation: dialSpin 1.8s linear infinite;
+    }
+
+    .reveal-dial::after {
+      content: "?";
+      width: 112px;
+      height: 112px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: #fff;
+      font-size: 4rem;
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .reveal-title {
+      font-size: clamp(2rem, 6vw, 4.8rem);
+      line-height: 0.92;
+      font-weight: 950;
+      text-wrap: balance;
+    }
+
+    .reveal-sub {
+      color: var(--ink-soft);
+      font-size: 1.05rem;
+      font-weight: 850;
+    }
+
+    .results-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      align-items: start;
+      min-height: 100%;
+    }
+
+    .result-report {
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: 6px 6px 0 var(--ink);
+    }
+
+    .result-report {
+      display: grid;
+      gap: 14px;
+      padding: 20px;
+      align-content: start;
+    }
+
+    .result-board-section {
+      display: grid;
+      gap: 12px;
+      min-height: 260px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: 6px 6px 0 var(--ink);
+      padding: 18px;
+    }
+
+    .result-board-section .board-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-content: start;
+    }
+
+    .board-note {
+      color: var(--ink-soft);
+      font-size: 0.92rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .result-topline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .pill {
+      width: fit-content;
+      padding: 8px 10px;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background: var(--mint);
+      font-size: 0.78rem;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .pill:nth-child(2) {
+      background: var(--sun);
+    }
+
+    .result-title {
+      font-size: clamp(1.85rem, 4.6vw, 3.05rem);
+      line-height: 0.92;
+      font-weight: 950;
+      text-wrap: balance;
+    }
+
+    .result-screen {
+      align-content: start;
+    }
+
+    .headline {
+      padding: 12px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: rgba(255, 79, 139, 0.12);
+      font-size: clamp(1rem, 2vw, 1.22rem);
+      font-weight: 950;
+      line-height: 1.22;
+    }
+
+    .diagnosis {
+      color: var(--ink-soft);
+      font-size: 0.98rem;
+      font-weight: 800;
+      line-height: 1.42;
+    }
+
+    .result-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .trait-board {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .meter-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .meter {
+      display: grid;
+      gap: 5px;
+    }
+
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--ink-soft);
+      font-size: 0.78rem;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .meter-track {
+      height: 12px;
+      overflow: hidden;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background: #f0eee7;
+    }
+
+    .meter-fill {
+      width: 0%;
+      height: 100%;
+      background: var(--cyan);
+      transition: width 700ms cubic-bezier(0.2, 0.9, 0.25, 1);
+    }
+
+    .trait-list {
+      display: grid;
+      gap: 8px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .trait-list li {
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      gap: 8px;
+      align-items: start;
+      padding: 9px;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink-soft);
+      font-size: 0.92rem;
+      font-weight: 850;
+      line-height: 1.25;
+    }
+
+    .trait-list li span:first-child {
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      color: var(--ink);
+      font-size: 0.76rem;
+      font-weight: 950;
+    }
+
+    .side-console {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 14px;
+      min-width: 0;
+      padding: 16px;
+      background:
+        linear-gradient(180deg, #fff, #f7f4ec);
+    }
+
+    .console-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .console-title h2 {
+      font-size: 1.25rem;
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .live-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--ink-soft);
+      font-size: 0.75rem;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .live-dot::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: var(--mint);
+      animation: blink 1.2s ease-in-out infinite;
+    }
+
+    .signal-board {
+      display: grid;
+      gap: 10px;
+    }
+
+    .signal {
+      display: grid;
+      gap: 7px;
+      padding: 10px;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .signal-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.82rem;
+      font-weight: 950;
+    }
+
+    .signal-bar {
+      height: 10px;
+      overflow: hidden;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background: #f0eee7;
+    }
+
+    .signal-fill {
+      width: 0%;
+      height: 100%;
+      background: var(--hot);
+      transition: width 420ms ease;
+    }
+
+    .signal:nth-child(2) .signal-fill {
+      background: var(--cyan);
+    }
+
+    .signal:nth-child(3) .signal-fill {
+      background: var(--sun);
+    }
+
+    .signal:nth-child(4) .signal-fill {
+      background: var(--mint);
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 7px;
+      align-content: start;
+    }
+
+    .tick {
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--ink-soft);
+      font-size: 0.72rem;
+      font-weight: 950;
+    }
+
+    .tick.is-current {
+      border-color: var(--ink);
+      background: var(--sun);
+      color: var(--ink);
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+
+    .tick.is-done {
+      border-color: var(--ink);
+      background: var(--mint);
+      color: var(--ink);
+    }
+
+    .privacy-note {
+      padding: 12px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: rgba(169, 135, 255, 0.16);
+      color: var(--ink-soft);
+      font-size: 0.9rem;
+      font-weight: 830;
+      line-height: 1.35;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      z-index: 10;
+      width: min(420px, calc(100% - 28px));
+      padding: 12px 14px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: var(--ink);
+      color: #fff;
+      box-shadow: 5px 5px 0 var(--hot);
+      text-align: center;
+      font-weight: 900;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 12px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.is-visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .confetti {
+      position: fixed;
+      inset: 0;
+      z-index: 8;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .confetti i {
+      position: absolute;
+      top: -24px;
+      width: 12px;
+      height: 18px;
+      border: 2px solid rgba(22, 20, 22, 0.2);
+      background: var(--hot);
+      opacity: 0;
+    }
+
+    .confetti i:nth-child(2n) {
+      background: var(--sun);
+    }
+
+    .confetti i:nth-child(3n) {
+      background: var(--mint);
+    }
+
+    .confetti i:nth-child(4n) {
+      background: var(--cyan);
+    }
+
+    .confetti.is-active i {
+      animation: fall 1100ms ease-in forwards;
+    }
+
+    @keyframes scan {
+      from {
+        transform: translateY(0);
+      }
+
+      to {
+        transform: translateY(198px);
+      }
+    }
+
+    @keyframes dialSpin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes blink {
+      50% {
+        opacity: 0.35;
+      }
+    }
+
+    @keyframes fall {
+      0% {
+        opacity: 1;
+        transform: translateY(-20px) rotate(0deg);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(105vh) rotate(330deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 1ms !important;
+      }
+    }
+
+    @media (max-width: 950px) {
+      .app {
+        width: min(100% - 24px, 760px);
+        padding: 12px 0;
+        align-items: start;
+      }
+
+      .simulator {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: auto;
+      }
+
+      .main-deck {
+        border-right: 0;
+      }
+
+      .screen-stage {
+        min-height: 680px;
+      }
+
+      .side-console {
+        border-top: 2px solid var(--ink);
+        grid-template-rows: auto auto auto;
+      }
+
+      .timeline {
+        grid-template-columns: repeat(15, minmax(30px, 1fr));
+        overflow: auto;
+        padding-bottom: 2px;
+      }
+
+      .privacy-note {
+        display: none;
+      }
+
+      .start-grid,
+      .results-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .scanner-art {
+        max-width: 360px;
+        justify-self: center;
+      }
+    }
+
+    @media (min-width: 951px) and (max-height: 760px) {
+      .simulator {
+        height: calc(100vh - 28px);
+        min-height: 0;
+      }
+
+      .topbar {
+        padding: 10px 14px;
+      }
+
+      .brand-chip {
+        width: 40px;
+        height: 40px;
+      }
+
+      .brand-chip svg {
+        width: 25px;
+        height: 25px;
+      }
+
+      h1 {
+        font-size: clamp(1.55rem, 3vw, 2.45rem);
+      }
+
+      .subtitle {
+        margin-top: 3px;
+        font-size: 0.82rem;
+      }
+
+      .utility-row {
+        padding: 9px 14px;
+      }
+
+      .screen {
+        padding: 16px 18px;
+      }
+
+      .intro-copy {
+        gap: 12px;
+      }
+
+      .start-title {
+        font-size: clamp(2rem, 4vw, 3rem);
+      }
+
+      .start-subtitle {
+        font-size: 1rem;
+      }
+
+      .player-input input {
+        min-height: 46px;
+      }
+
+      .primary-btn {
+        min-height: 44px;
+      }
+
+    }
+
+    @media (max-width: 660px) {
+      .app {
+        width: min(100% - 18px, 520px);
+        padding: 9px 0;
+      }
+
+      .topbar,
+      .utility-row {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .ghost-btn,
+      .primary-btn,
+      .share-btn {
+        width: 100%;
+      }
+
+      .screen-stage {
+        min-height: 720px;
+      }
+
+      .screen {
+        padding: 14px;
+      }
+
+      .brand {
+        align-items: flex-start;
+      }
+
+      .brand-chip {
+        width: 42px;
+        height: 42px;
+      }
+
+      .brand-chip svg {
+        width: 26px;
+        height: 26px;
+      }
+
+      .start-grid,
+      .question-layout {
+        gap: 14px;
+      }
+
+      .start-title {
+        font-size: clamp(2.15rem, 13vw, 3.2rem);
+      }
+
+      .result-board-section .board-list {
+        grid-template-columns: 1fr;
+      }
+
+      .scanner-window {
+        min-height: 205px;
+      }
+
+      .answer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .answer-btn {
+        min-height: 70px;
+        padding: 12px;
+      }
+
+      .micro-feedback,
+      .result-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .result-report,
+      .result-board-section,
+      .question-copy {
+        box-shadow: 4px 4px 0 var(--ink);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="simulator" aria-label="Age at Heart Simulator">
+      <div class="main-deck">
+        <header class="topbar">
+          <div class="brand">
+            <div class="brand-chip" aria-hidden="true">
+              <svg viewBox="0 0 48 48" role="img">
+                <path d="M24 6 C15 6 8 13 8 22 c0 13 16 20 16 20 s16 -7 16 -20 C40 13 33 6 24 6Z" fill="#fff" stroke="#161416" stroke-width="3"/>
+                <path d="M16 22 h5 l3 -7 l5 16 l3 -9 h5" fill="none" stroke="#161416" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <h1>Age at Heart Simulator</h1>
+              <p class="subtitle">Answer honestly. The algorithm has seen your playlist.</p>
+            </div>
+          </div>
+          <button class="ghost-btn" id="resetBtn" type="button">Restart</button>
+        </header>
+
+        <div class="utility-row" aria-live="polite">
+          <div class="progress-zone">
+            <div class="progress-meta">
+              <span id="progressText">Ready to scan</span>
+              <span id="modeText">No birth certificate required</span>
+            </div>
+            <div class="progress-shell" aria-hidden="true">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+        </div>
+
+        <section class="screen-stage">
+          <div class="screen start-screen is-active" id="startScreen">
+            <div class="start-grid">
+              <div class="intro-copy">
+                <span class="eyebrow">Vibe scanner online</span>
+                <h2 class="start-title">Age at Heart Simulator</h2>
+                <p class="start-subtitle">Answer honestly. The algorithm has seen your playlist.</p>
+                <div class="player-input">
+                  <label for="playerName">Enter your name</label>
+                  <input id="playerName" name="playerName" type="text" maxlength="24" autocomplete="name" placeholder="e.g. Riya, Arjun, Office Legend">
+                </div>
+                <button class="primary-btn" id="startBtn" type="button">Start scan</button>
+                <p class="small-print" id="nameHint">Your result can appear on the result board after the reveal.</p>
+                <p class="small-print">For fun only. No birth certificate required.</p>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="screen quiz-screen" id="quizScreen">
+            <div class="question-layout">
+              <div class="question-copy">
+                <div class="question-kicker">
+                  <span id="categoryText">Lifestyle signal</span>
+                  <span id="scanText">Signal 1 of 10</span>
+                </div>
+                <h2 class="question-text" id="questionText"></h2>
+              </div>
+
+              <div class="answer-grid" id="answerGrid"></div>
+
+              <div class="micro-feedback" id="feedback" aria-live="polite">
+                <div>
+                  <strong id="feedbackTitle"></strong>
+                  <span id="feedbackText"></span>
+                </div>
+                <button class="primary-btn" id="nextBtn" type="button">Next</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="screen reveal-screen" id="revealScreen">
+            <div class="reveal-box">
+              <div class="reveal-dial" aria-hidden="true"></div>
+              <h2 class="reveal-title">Consulting the group chat...</h2>
+              <p class="reveal-sub">Triangulating snacks, slang, folder habits, and suspicious email punctuation.</p>
+            </div>
+          </div>
+
+          <div class="screen result-screen" id="resultScreen">
+            <div class="results-layout">
+              <section class="result-report" aria-labelledby="resultTitle">
+                <div class="result-topline">
+                  <span class="pill" id="ageRangePill">Probably 29-36</span>
+                  <span class="pill" id="confidencePill">82% suspiciously confident</span>
+                </div>
+                <h2 class="result-title" id="resultTitle">You are a Millennial at heart</h2>
+                <p class="headline" id="shareHeadline"></p>
+                <p class="diagnosis" id="diagnosis"></p>
+                <div class="result-actions">
+                  <button class="primary-btn" id="playAgainBtn" type="button">Restart</button>
+                  <button class="share-btn" id="shareBtn" type="button">Share result</button>
+                </div>
+              </section>
+
+              <section class="result-board-section" aria-label="Shared result board">
+                <div class="public-board">
+                  <strong>Who got what</strong>
+                  <p class="board-note">The latest players show up here after they finish. Perfect for group chaos, office parties, and family WhatsApp investigations.</p>
+                  <ul class="board-list" id="resultBoardList"></ul>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="side-console" aria-label="Simulator progress">
+        <div class="console-title">
+          <h2>Mystery panel</h2>
+          <span class="live-dot">Live</span>
+        </div>
+        <div class="signal-board" id="signalBoard"></div>
+        <div class="timeline" id="timeline"></div>
+        <p class="privacy-note">No real age, birthday, or login needed. Just vibes, choices, and harmless mathematical side-eye.</p>
+      </aside>
+    </section>
+  </main>
+
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+  <div class="toast" id="toast" aria-live="polite"></div>
+
+  <script>
+    const generations = ["genZ", "millennial", "genX", "boomer"];
+
+    const generationLabels = {
+      genZ: "Gen Z",
+      millennial: "Millennial",
+      genX: "Gen X",
+      boomer: "Boomer"
+    };
+
+    const generationAges = {
+      genZ: "Probably 18-27",
+      millennial: "Probably 29-36",
+      genX: "Probably 43-55",
+      boomer: "Probably 60-72"
+    };
+
+    const generationHeadlines = {
+      genZ: "Main character battery: 97%. Calendar battery: 4%.",
+      millennial: "Emotionally sponsored by iced coffee, tabs, and one good tote bag.",
+      genX: "Low drama, high competence, already read the manual once in 1998.",
+      boomer: "Built different, prints the receipt, somehow still wins the argument."
+    };
+
+    const resultProfiles = {
+      genZ: {
+        diagnosis: "Your inner age lives online, speaks fluent micro-trend, and can detect cringe from three rooms away. You claim to be chill, but the notes app contains a full rebrand strategy and at least one dramatic list.",
+        traits: [
+          "You treat screenshots like legal documentation.",
+          "You can make a five-second video feel like a thesis.",
+          "Your group chat has more lore than a prestige TV universe.",
+          "You fear phone calls, low battery, and people who say 'adulting' too seriously.",
+          "Your humor arrives dry, fast, and slightly unwell."
+        ]
+      },
+      millennial: {
+        diagnosis: "Your inner age is balancing optimism, inbox guilt, and a playlist that still believes bridges in pop songs matter. You are one minor inconvenience away from saying 'welp' and buying storage baskets.",
+        traits: [
+          "You apologize to furniture after bumping into it.",
+          "You have a loyalty account for coffee and emotional support snacks.",
+          "You remember life before streaming but refuse to go back.",
+          "You put punctuation in texts, then worry it sounded intense.",
+          "You own one nice pan and consider this personal growth."
+        ]
+      },
+      genX: {
+        diagnosis: "Your inner age has seen every trend arrive, leave, and return wearing worse pants. You are allergic to unnecessary meetings, deeply loyal to practical shoes, and quietly prepared for the Wi-Fi to betray everyone.",
+        traits: [
+          "You know the fastest exit from any event.",
+          "You can fix a device by looking disappointed at it.",
+          "You treat silence as a perfectly valid communication style.",
+          "You distrust hype until it becomes useful.",
+          "You remember mixtapes and still respect the craft."
+        ]
+      },
+      boomer: {
+        diagnosis: "Your inner age believes some things should be built to last, including appliances, manners, and the ability to speak to a human. You may not know every app, but you know exactly when a deal is nonsense.",
+        traits: [
+          "You keep instructions, receipts, and backup receipts.",
+          "You believe a phone can still be used for calls.",
+          "You have strong opinions about volume levels.",
+          "You can spot bad customer service from across the parking lot.",
+          "You enjoy a physical button and honestly, fair."
+        ]
+      }
+    };
+
+    const ageBuckets = {
+      "16-22": { label: "Probably 16-22", min: 16, max: 22 },
+      "23-28": { label: "Probably 23-28", min: 23, max: 28 },
+      "29-36": { label: "Probably 29-36", min: 29, max: 36 },
+      "37-45": { label: "Probably 37-45", min: 37, max: 45 },
+      "46-55": { label: "Probably 46-55", min: 46, max: 55 },
+      "56-72": { label: "Probably 56-72", min: 56, max: 72 }
+    };
+
+    const scanQuips = {
+      genZ: [
+        "The scanner just unlocked a new micro-vibe.",
+        "A suspicious amount of lore detected.",
+        "Your answer wore tiny sunglasses."
+      ],
+      millennial: [
+        "The algorithm smelled iced coffee.",
+        "A side part somewhere just flinched.",
+        "Your answer filed a gentle apology."
+      ],
+      genX: [
+        "The scanner nodded and left early.",
+        "A practical jacket has entered the chat.",
+        "Your answer fixed the router without bragging."
+      ],
+      boomer: [
+        "A paper receipt materialized nearby.",
+        "The scanner briefly asked for a manager.",
+        "Your answer owns a label maker."
+      ]
+    };
+
+    const questions = [
+      {
+        category: "Communication",
+        text: "Someone calls instead of texting. What is your body doing?",
+        answers: [
+          { text: "Staring at the screen like it sent a legal notice.", gen: "genZ", age: "16-22" },
+          { text: "Let it ring, then text 'everything okay?' with concern.", gen: "millennial", age: "29-36" },
+          { text: "Answer, solve the issue, return to peace.", gen: "genX", age: "46-55" },
+          { text: "Pick up immediately. This is what the device trained for.", gen: "boomer", age: "56-72" }
+        ]
+      },
+      {
+        category: "Morning chaos",
+        text: "First thing you open in the morning?",
+        answers: [
+          { text: "Messages, music, and whatever notification is being dramatic.", gen: "genZ", age: "16-22" },
+          { text: "Teams, because apparently peace was not in the calendar invite.", gen: "millennial", age: "29-36" },
+          { text: "Email, calendar, news. In that order. Like an adult with receipts.", gen: "genX", age: "46-55" },
+          { text: "Weather, headlines, and maybe one forwarded family update.", gen: "boomer", age: "56-72" }
+        ]
+      },
+      {
+        category: "Friday night",
+        text: "Your ideal Friday night has arrived. Pick the least fake plan.",
+        answers: [
+          { text: "One plan, three outfit changes, and a story that says nothing.", gen: "genZ", age: "23-28" },
+          { text: "Takeout, streaming, and calling it emotional maintenance.", gen: "millennial", age: "29-36" },
+          { text: "Good food, decent parking, home before nonsense begins.", gen: "genX", age: "46-55" },
+          { text: "Dinner at 6:30. Dessert by 7:15. Excellence.", gen: "boomer", age: "56-72" }
+        ]
+      },
+      {
+        category: "Bollywood comfort",
+        text: "Pick the Bollywood moment that would instantly fix your mood.",
+        answers: [
+          { text: "A Tauba Tauba hook step attempt with 12% balance and 100% confidence.", gen: "genZ", age: "16-22" },
+          { text: "Kesariya playing while you romanticize one unread Teams message.", gen: "millennial", age: "29-36" },
+          { text: "Shah Rukh opening his arms like the wind machine owes him money.", gen: "genX", age: "46-55" },
+          { text: "A full family song where everyone knows the lyrics and nobody needs subtitles.", gen: "boomer", age: "56-72" }
+        ]
+      },
+      {
+        category: "Work mode",
+        text: "Your boss says 'quick sync'. What does your soul say?",
+        answers: [
+          { text: "This could have been a voice note I ignored.", gen: "genZ", age: "23-28" },
+          { text: "Sure! No worries! Internally, many worries.", gen: "millennial", age: "29-36" },
+          { text: "Send agenda first. The meeting must earn oxygen.", gen: "genX", age: "46-55" },
+          { text: "Call me. We will settle this faster than the invite loads.", gen: "boomer", age: "56-72" }
+        ]
+      },
+      {
+        category: "Nirmala Tai alert",
+        text: "Nirmala Tai announces the budget. Your first reaction?",
+        answers: [
+          { text: "Wait for memes to explain the economy in 12 seconds.", gen: "genZ", age: "23-28" },
+          { text: "Check salary, tax, rent, SIP, and emotional damage.", gen: "millennial", age: "29-36" },
+          { text: "Open a spreadsheet and quietly judge everyone else's panic.", gen: "genX", age: "46-55" },
+          { text: "Watch the full speech and explain fiscal discipline at dinner.", gen: "boomer", age: "56-72" }
+        ]
+      },
+      {
+        category: "Payment ritual",
+        text: "At checkout, the bill arrives. You become:",
+        answers: [
+          { text: "UPI scan, split request, tiny guilt if someone rounds wrong.", gen: "genZ", age: "23-28" },
+          { text: "Card tap while calculating reward points like a finance bro.", gen: "millennial", age: "29-36" },
+          { text: "Pay cleanly, keep proof, avoid group-payment theatre.", gen: "genX", age: "46-55" },
+          { text: "Cash/card ready, receipt secured, cashier respected.", gen: "boomer", age: "56-72" }
+        ]
+      },
+      {
+        category: "Bollywood dialogue",
+        text: "Your life needs a dramatic Bollywood caption. Pick one.",
+        answers: [
+          { text: "Apna time aayega, but first let me charge my phone to 4%.", gen: "genZ", age: "16-22" },
+          { text: "Main apni favourite hoon, pending manager approval.", gen: "millennial", age: "29-36" },
+          { text: "Picture abhi baaki hai, but I am leaving before traffic.", gen: "genX", age: "46-55" },
+          { text: "Rishtey mein toh hum tumhare bill-splitting auditor lagte hain.", gen: "boomer", age: "56-72" }
+        ]
+      },
+      {
+        category: "File storage",
+        text: "You need to save an important file. What chaos method wins?",
+        answers: [
+          { text: "Screenshot, cloud, chat to self, hope the universe indexes it.", gen: "genZ", age: "23-28" },
+          { text: "A folder named Final_v7_ACTUAL_FINAL, obviously.", gen: "millennial", age: "29-36" },
+          { text: "Named folder, backup copy, smug but deserved.", gen: "genX", age: "46-55" },
+          { text: "Desktop, printout, USB, and maybe a plastic folder.", gen: "boomer", age: "56-72" }
+        ]
+      },
+      {
+        category: "Offline crisis",
+        text: "Wi-Fi dies during something important. What is the move?",
+        answers: [
+          { text: "Hotspot, panic, and accuse the room's energy.", gen: "genZ", age: "16-22" },
+          { text: "Restart router, sigh deeply, threaten to switch providers.", gen: "millennial", age: "29-36" },
+          { text: "Check cables, reboot properly, become the IT department.", gen: "genX", age: "46-55" },
+          { text: "Call the provider and write down the complaint number.", gen: "boomer", age: "56-72" }
+        ]
+      }
+    ];
+
+    const state = {
+      mode: "start",
+      currentIndex: 0,
+      scores: { genZ: 0, millennial: 0, genX: 0, boomer: 0 },
+      ageScores: Object.fromEntries(Object.keys(ageBuckets).map((key) => [key, 0])),
+      playerName: "",
+      selected: false,
+      pendingAnswer: null,
+      result: null,
+      resultSubmitted: false,
+      board: []
+    };
+
+    const els = {
+      startScreen: document.getElementById("startScreen"),
+      quizScreen: document.getElementById("quizScreen"),
+      revealScreen: document.getElementById("revealScreen"),
+      resultScreen: document.getElementById("resultScreen"),
+      playerName: document.getElementById("playerName"),
+      nameHint: document.getElementById("nameHint"),
+      startBtn: document.getElementById("startBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      playAgainBtn: document.getElementById("playAgainBtn"),
+      shareBtn: document.getElementById("shareBtn"),
+      nextBtn: document.getElementById("nextBtn"),
+      progressText: document.getElementById("progressText"),
+      modeText: document.getElementById("modeText"),
+      progressFill: document.getElementById("progressFill"),
+      categoryText: document.getElementById("categoryText"),
+      scanText: document.getElementById("scanText"),
+      questionText: document.getElementById("questionText"),
+      answerGrid: document.getElementById("answerGrid"),
+      feedback: document.getElementById("feedback"),
+      feedbackTitle: document.getElementById("feedbackTitle"),
+      feedbackText: document.getElementById("feedbackText"),
+      signalBoard: document.getElementById("signalBoard"),
+      timeline: document.getElementById("timeline"),
+      resultTitle: document.getElementById("resultTitle"),
+      ageRangePill: document.getElementById("ageRangePill"),
+      confidencePill: document.getElementById("confidencePill"),
+      shareHeadline: document.getElementById("shareHeadline"),
+      diagnosis: document.getElementById("diagnosis"),
+      resultBoardList: document.getElementById("resultBoardList"),
+      confetti: document.getElementById("confetti"),
+      toast: document.getElementById("toast")
+    };
+
+    function setScreen(screenName) {
+      state.mode = screenName;
+      [els.startScreen, els.quizScreen, els.revealScreen, els.resultScreen].forEach((screen) => {
+        screen.classList.remove("is-active");
+      });
+
+      if (screenName === "start") {
+        els.startScreen.classList.add("is-active");
+      } else if (screenName === "quiz") {
+        els.quizScreen.classList.add("is-active");
+      } else if (screenName === "reveal") {
+        els.revealScreen.classList.add("is-active");
+      } else {
+        els.resultScreen.classList.add("is-active");
+      }
+
+      const activeScreen = document.querySelector(".screen.is-active");
+      if (activeScreen) {
+        activeScreen.scrollTop = 0;
+      }
+
+      if (screenName !== "quiz") {
+        window.setTimeout(() => {
+          const shouldFocusStage = (screenName === "reveal" || screenName === "result") && window.matchMedia("(max-width: 660px)").matches;
+          const targetTop = shouldFocusStage ? document.querySelector(".screen-stage").offsetTop : 0;
+          window.scrollTo({ top: targetTop, left: 0, behavior: "auto" });
+          if (activeScreen) {
+            activeScreen.scrollTop = 0;
+          }
+        }, 0);
+      }
+
+      renderProgress();
+    }
+
+    function getCurrentQuestion() {
+      return questions[state.currentIndex];
+    }
+
+    function getTotalSignals() {
+      return Object.values(state.scores).reduce((sum, value) => sum + value, 0);
+    }
+
+    function cleanPlayerName(value) {
+      return value.replace(/\s+/g, " ").trim().slice(0, 24);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function renderBoards() {
+      const rows = state.board.slice(0, 20);
+      const empty = `<li><span>Results will appear here after people play.</span><span>Ready</span></li>`;
+      const markup = rows.length
+        ? rows.map((entry) => `
+          <li>
+            <span><b>${escapeHtml(entry.name)}</b> is ${escapeHtml(entry.result)}</span>
+            <span>${escapeHtml(entry.ageRange || "Mystery")}</span>
+          </li>
+        `).join("")
+        : empty;
+
+      els.resultBoardList.innerHTML = markup;
+    }
+
+    function getFallbackBoard() {
+      try {
+        return JSON.parse(window.localStorage.getItem("ageAtHeartResults") || "[]");
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function setFallbackBoard(board) {
+      try {
+        window.localStorage.setItem("ageAtHeartResults", JSON.stringify(board.slice(0, 25)));
+      } catch (error) {
+        return;
+      }
+    }
+
+    function mergeBoards(...boards) {
+      const seen = new Set();
+      return boards
+        .flat()
+        .filter(Boolean)
+        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+        .filter((entry) => {
+          const key = `${entry.name}|${entry.result}|${entry.ageRange}|${entry.createdAt}`;
+          if (seen.has(key)) {
+            return false;
+          }
+          seen.add(key);
+          return true;
+        })
+        .slice(0, 25);
+    }
+
+    async function loadBoard() {
+      try {
+        const response = await fetch("/api/results", { headers: { Accept: "application/json" } });
+        if (response.ok) {
+          const data = await response.json();
+          state.board = mergeBoards(Array.isArray(data.results) ? data.results : [], getFallbackBoard());
+          renderBoards();
+          return;
+        }
+      } catch (error) {
+        // Local preview has no shared backend, so localStorage keeps the board usable.
+      }
+
+      state.board = getFallbackBoard();
+      renderBoards();
+    }
+
+    async function submitResult() {
+      if (state.resultSubmitted || !state.result || !state.playerName) {
+        return;
+      }
+
+      state.resultSubmitted = true;
+      const entry = {
+        name: state.playerName,
+        result: `${state.result.label} at heart`,
+        ageRange: state.result.ageRange,
+        confidence: state.result.confidence,
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        const response = await fetch("/api/results", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(entry)
+        });
+        if (response.ok) {
+          const data = await response.json();
+          state.board = mergeBoards(Array.isArray(data.results) ? data.results : [], [entry], state.board, getFallbackBoard());
+          setFallbackBoard(state.board);
+          renderBoards();
+          return;
+        }
+      } catch (error) {
+        // See loadBoard: local fallback for static preview.
+      }
+
+      state.board = mergeBoards([entry], state.board, getFallbackBoard());
+      setFallbackBoard(state.board);
+      renderBoards();
+    }
+
+    function renderProgress() {
+      const answeredCount = getTotalSignals();
+      const percent = state.mode === "result" ? 100 : Math.round((answeredCount / questions.length) * 100);
+      els.progressFill.style.width = `${percent}%`;
+
+      if (state.mode === "start") {
+        els.progressText.textContent = "Ready to scan";
+        els.modeText.textContent = "No birth certificate required";
+      } else if (state.mode === "quiz") {
+        els.progressText.textContent = `Signal ${Math.min(state.currentIndex + 1, questions.length)} of ${questions.length}`;
+        els.modeText.textContent = `${percent}% vibes processed`;
+      } else if (state.mode === "reveal") {
+        els.progressText.textContent = "Generating result";
+        els.modeText.textContent = "Very official nonsense";
+      } else {
+        els.progressText.textContent = "Scan complete";
+        els.modeText.textContent = "Shareable chaos ready";
+      }
+    }
+
+    function renderSignalBoard() {
+      const answeredCount = getTotalSignals();
+      const percent = Math.round((answeredCount / questions.length) * 100);
+      const pendingLabel = state.selected ? "Answer staged" : state.mode === "quiz" ? "Awaiting tap" : "Scanner idle";
+      els.signalBoard.innerHTML = `
+        <div class="signal">
+          <div class="signal-top">
+            <span>Vibe data</span>
+            <span>${percent}%</span>
+          </div>
+          <div class="signal-bar" aria-hidden="true">
+            <div class="signal-fill" style="width: ${percent}%"></div>
+          </div>
+        </div>
+        <div class="signal">
+          <div class="signal-top">
+            <span>Current status</span>
+            <span>${pendingLabel}</span>
+          </div>
+          <div class="signal-bar" aria-hidden="true">
+            <div class="signal-fill" style="width: ${state.selected ? 72 : 28}%"></div>
+          </div>
+        </div>
+        <div class="signal">
+          <div class="signal-top">
+            <span>Algorithm confidence</span>
+            <span>Hidden</span>
+          </div>
+          <div class="signal-bar" aria-hidden="true">
+            <div class="signal-fill" style="width: ${state.mode === "result" ? 100 : Math.max(12, percent)}%"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTimeline() {
+      const answeredCount = getTotalSignals();
+      els.timeline.innerHTML = questions
+        .map((_, index) => {
+          let status = "";
+          if (index < answeredCount) {
+            status = "is-done";
+          } else if (state.mode === "quiz" && index === state.currentIndex) {
+            status = "is-current";
+          }
+          return `<div class="tick ${status}">${index + 1}</div>`;
+        })
+        .join("");
+    }
+
+    function resetScores() {
+      generations.forEach((gen) => {
+        state.scores[gen] = 0;
+      });
+      Object.keys(state.ageScores).forEach((bucket) => {
+        state.ageScores[bucket] = 0;
+      });
+    }
+
+    function resetSimulator() {
+      state.currentIndex = 0;
+      state.selected = false;
+      state.pendingAnswer = null;
+      state.result = null;
+      state.resultSubmitted = false;
+      resetScores();
+      renderSignalBoard();
+      renderTimeline();
+      renderQuestion();
+      setScreen("start");
+    }
+
+    function startSimulator() {
+      const name = cleanPlayerName(els.playerName.value);
+      if (!name) {
+        els.nameHint.textContent = "Add a name first so the result board knows who is who.";
+        els.playerName.focus();
+        showToast("Name first, fame later.");
+        return;
+      }
+
+      state.playerName = name;
+      els.playerName.value = name;
+      els.nameHint.textContent = "Perfect. The algorithm now has a name for the scoreboard.";
+      state.currentIndex = 0;
+      state.selected = false;
+      state.pendingAnswer = null;
+      state.resultSubmitted = false;
+      resetScores();
+      renderQuestion();
+      setScreen("quiz");
+    }
+
+    function renderQuestion() {
+      const question = getCurrentQuestion();
+      state.selected = false;
+      state.pendingAnswer = null;
+      els.categoryText.textContent = question.category;
+      els.scanText.textContent = `Signal ${state.currentIndex + 1} of ${questions.length}`;
+      els.questionText.textContent = question.text;
+      els.feedback.classList.add("is-visible");
+      els.feedbackTitle.textContent = "Pick a choice.";
+      els.feedbackText.textContent = "You can change your mind before saving it.";
+      els.nextBtn.textContent = state.currentIndex === questions.length - 1 ? "Save & reveal" : "Save answer";
+      els.nextBtn.disabled = true;
+
+      els.answerGrid.innerHTML = "";
+      question.answers.forEach((answer, index) => {
+        const button = document.createElement("button");
+        button.className = "answer-btn";
+        button.type = "button";
+        button.innerHTML = `<span class="answer-index">${index + 1}</span><span>${answer.text}</span>`;
+        button.addEventListener("click", () => selectAnswer(answer, button));
+        els.answerGrid.appendChild(button);
+      });
+
+      renderProgress();
+      renderSignalBoard();
+      renderTimeline();
+    }
+
+    function selectAnswer(answer, selectedButton) {
+      state.selected = true;
+      state.pendingAnswer = answer;
+
+      [...els.answerGrid.children].forEach((button) => {
+        button.classList.toggle("is-selected", button === selectedButton);
+      });
+
+      els.feedbackTitle.textContent = "Choice staged.";
+      els.feedbackText.textContent = "Tap another option if you want, then save it.";
+      els.feedback.classList.add("is-visible");
+      els.nextBtn.disabled = false;
+      renderSignalBoard();
+      renderTimeline();
+      renderProgress();
+    }
+
+    function getWinnerFromScores(scores) {
+      return Object.entries(scores)
+        .sort((a, b) => {
+          if (b[1] !== a[1]) {
+            return b[1] - a[1];
+          }
+          return generations.indexOf(a[0]) - generations.indexOf(b[0]);
+        })[0][0];
+    }
+
+    function getAgeRange(winningGen) {
+      const sortedAges = Object.entries(state.ageScores).sort((a, b) => {
+        if (b[1] !== a[1]) {
+          return b[1] - a[1];
+        }
+        const preferred = generationAges[winningGen].replace("Probably ", "");
+        if (a[0] === preferred) {
+          return -1;
+        }
+        if (b[0] === preferred) {
+          return 1;
+        }
+        return ageBuckets[a[0]].min - ageBuckets[b[0]].min;
+      });
+
+      if (sortedAges[0][1] === 0) {
+        return generationAges[winningGen];
+      }
+
+      const topAge = ageBuckets[sortedAges[0][0]].label;
+      const genDefault = generationAges[winningGen];
+      const topRange = sortedAges[0][0];
+      const defaultRange = genDefault.replace("Probably ", "");
+
+      if (state.ageScores[topRange] === state.ageScores[defaultRange]) {
+        return genDefault;
+      }
+
+      return topAge;
+    }
+
+    function calculateConfidence(winner) {
+      const total = questions.length;
+      const winningScore = state.scores[winner];
+      const sorted = Object.values(state.scores).sort((a, b) => b - a);
+      const lead = sorted[0] - sorted[1];
+      const base = 48 + Math.round((winningScore / total) * 34) + lead * 5;
+      return Math.max(57, Math.min(96, base));
+    }
+
+    function calculateResult() {
+      const winner = getWinnerFromScores(state.scores);
+      const confidence = calculateConfidence(winner);
+      return {
+        winner,
+        label: generationLabels[winner],
+        ageRange: getAgeRange(winner),
+        confidence,
+        headline: generationHeadlines[winner],
+        diagnosis: resultProfiles[winner].diagnosis,
+        traits: resultProfiles[winner].traits
+      };
+    }
+
+    function renderResult() {
+      const result = state.result;
+      els.resultTitle.textContent = `You are a ${result.label} at heart`;
+      els.ageRangePill.textContent = result.ageRange;
+      els.confidencePill.textContent = `${result.confidence}% suspiciously confident`;
+      els.shareHeadline.textContent = result.headline;
+      els.diagnosis.textContent = result.diagnosis;
+      submitResult();
+    }
+
+    function nextStep() {
+      if (!state.pendingAnswer) {
+        showToast("Pick a lane first, then save it. The scanner is dramatic, not psychic.");
+        return;
+      }
+
+      state.scores[state.pendingAnswer.gen] += 1;
+      state.ageScores[state.pendingAnswer.age] += 1;
+      const quips = scanQuips[state.pendingAnswer.gen];
+      els.feedbackTitle.textContent = "Saved.";
+      els.feedbackText.textContent = quips[Math.floor(Math.random() * quips.length)];
+      state.pendingAnswer = null;
+      state.selected = false;
+
+      if (state.currentIndex < questions.length - 1) {
+        state.currentIndex += 1;
+        renderQuestion();
+        return;
+      }
+
+      state.result = calculateResult();
+      setScreen("reveal");
+      window.setTimeout(() => {
+        renderResult();
+        setScreen("result");
+        renderSignalBoard();
+        renderTimeline();
+        launchConfetti();
+      }, 1800);
+    }
+
+    function launchConfetti() {
+      els.confetti.innerHTML = "";
+      for (let index = 0; index < 42; index += 1) {
+        const piece = document.createElement("i");
+        piece.style.left = `${Math.random() * 100}%`;
+        piece.style.animationDelay = `${Math.random() * 360}ms`;
+        piece.style.transform = `rotate(${Math.random() * 160}deg)`;
+        els.confetti.appendChild(piece);
+      }
+
+      els.confetti.classList.add("is-active");
+      window.setTimeout(() => {
+        els.confetti.classList.remove("is-active");
+      }, 1500);
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("is-visible");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        els.toast.classList.remove("is-visible");
+      }, 2300);
+    }
+
+    async function shareResult() {
+      if (!state.result) {
+        return;
+      }
+
+      const pageUrl = window.location.href.startsWith("http") ? window.location.href : "";
+      const owner = state.playerName ? `${state.playerName}'s ` : "";
+      const text = `Age at Heart says ${owner}result is ${state.result.label} at heart. ${state.result.ageRange}. ${state.result.confidence}% suspiciously confident.`;
+      const shareText = pageUrl ? `${text} ${pageUrl}` : text;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "Age at Heart Simulator",
+            text,
+            url: pageUrl || undefined
+          });
+          return;
+        } catch (error) {
+          if (error.name === "AbortError") {
+            return;
+          }
+        }
+      }
+
+      try {
+        await navigator.clipboard.writeText(shareText);
+        showToast(pageUrl ? "Result and link copied. Group chat has been warned." : "Result copied. Group chat has been warned.");
+      } catch (error) {
+        const textarea = document.createElement("textarea");
+        textarea.value = shareText;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        textarea.remove();
+        showToast(pageUrl ? "Result and link copied. Group chat has been warned." : "Result copied. Group chat has been warned.");
+      }
+    }
+
+    els.startBtn.addEventListener("click", startSimulator);
+    els.nextBtn.addEventListener("click", nextStep);
+    els.resetBtn.addEventListener("click", resetSimulator);
+    els.playAgainBtn.addEventListener("click", resetSimulator);
+    els.shareBtn.addEventListener("click", shareResult);
+    els.playerName.addEventListener("input", () => {
+      els.nameHint.textContent = cleanPlayerName(els.playerName.value)
+        ? "Your result can appear on the result board after the reveal."
+        : "Add a name first so the result board knows who is who.";
+    });
+
+    loadBoard();
+    resetSimulator();
+  </script>
+</body>
+</html>
